@@ -1,0 +1,10 @@
+[build]
+  base = "frontend"
+  publish = "."
+  command = "echo 'No build required for static frontend'"
+
+[build.environment]
+  API_BASE_URL = "https://your-render-backend-url.onrender.com"
+
+[[plugins]]
+  package = "netlify-plugin-inline-source"
