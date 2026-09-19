@@ -5,5 +5,6 @@
 .DS_Store
 out/
 target/
+dependency-reduced-pom.xml
 .idea/
 *.iml

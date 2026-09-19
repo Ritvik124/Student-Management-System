@@ -17,7 +17,7 @@ public class StudentDAO {
                department, year, cgpa, address)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""";
         try (Connection c  = DatabaseConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+             PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, s.getRollNumber());
             ps.setString(2, s.getFirstName());
             ps.setString(3, s.getLastName());
@@ -27,7 +27,11 @@ public class StudentDAO {
             ps.setInt   (7, s.getYear());
             ps.setDouble(8, s.getCgpa());
             ps.setString(9, s.getAddress());
-            return ps.executeUpdate() > 0;
+            if (ps.executeUpdate() == 0) return false;
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) s.setId(keys.getInt(1));
+            }
+            return true;
         } catch (SQLException e) {
             System.err.println("Add student error: " + e.getMessage());
             return false;
