@@ -1,6 +1,9 @@
 package com.sms.util;
 
 import java.sql.*;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 public class DatabaseConnection {
     private DatabaseConnection() {}
@@ -28,11 +31,9 @@ public class DatabaseConnection {
         if (dbUrl != null && !dbUrl.isBlank()) {
             try {
                 Class.forName("org.postgresql.Driver");
-                if (dbUrl.startsWith("postgres://")) dbUrl = "jdbc:postgresql://" + dbUrl.substring(11);
-                if (dbUrl.startsWith("postgresql://")) dbUrl = "jdbc:postgresql://" + dbUrl.substring(13);
-                return DriverManager.getConnection(dbUrl);
-            } catch (ClassNotFoundException e) {
-                throw new SQLException("PostgreSQL JDBC driver is unavailable.", e);
+                return postgresConnection(dbUrl);
+            } catch (ClassNotFoundException | IllegalArgumentException e) {
+                throw new SQLException("PostgreSQL database configuration is invalid.", e);
             }
         }
 
@@ -112,5 +113,22 @@ public class DatabaseConnection {
     private static String valueOrDefault(String key, String fallback) {
         String value = System.getenv(key);
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static Connection postgresConnection(String databaseUrl) throws SQLException {
+        if (databaseUrl.startsWith("jdbc:postgresql:")) return DriverManager.getConnection(databaseUrl);
+
+        URI uri = URI.create(databaseUrl);
+        if (uri.getHost() == null || uri.getRawUserInfo() == null || uri.getPath() == null || uri.getPath().isBlank()) {
+            throw new IllegalArgumentException("DATABASE_URL is missing its host, credentials, or database name.");
+        }
+        String[] credentials = uri.getRawUserInfo().split(":", 2);
+        if (credentials.length != 2) throw new IllegalArgumentException("DATABASE_URL credentials are invalid.");
+
+        String jdbcUrl = "jdbc:postgresql://" + uri.getHost() + ":" +
+                (uri.getPort() == -1 ? 5432 : uri.getPort()) + uri.getPath();
+        String user = URLDecoder.decode(credentials[0], StandardCharsets.UTF_8);
+        String password = URLDecoder.decode(credentials[1], StandardCharsets.UTF_8);
+        return DriverManager.getConnection(jdbcUrl, user, password);
     }
 }
