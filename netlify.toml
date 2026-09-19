@@ -1,10 +1,11 @@
 [build]
   base = "frontend"
   publish = "."
-  command = "echo 'No build required for static frontend'"
 
-[build.environment]
-  API_BASE_URL = "https://your-render-backend-url.onrender.com"
-
-[[plugins]]
-  package = "netlify-plugin-inline-source"
+# Set API_BASE_URL in the Netlify site's environment variables to the HTTPS
+# Render service URL. Requests stay same-origin in the browser and are proxied.
+[[redirects]]
+  from = "/api/*"
+  to = "$API_BASE_URL/api/:splat"
+  status = 200
+  force = true
